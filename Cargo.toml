@@ -1,6 +1,6 @@
 [package]
 name = "amux"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "tmux session manager for local code agents"
 license = "MIT"
