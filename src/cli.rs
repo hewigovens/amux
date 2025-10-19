@@ -30,49 +30,61 @@ enum Commands {
     /// Launch an agent inside tmux (use --force to restart)
     Start {
         /// Agent identifier (alphanumeric, '-' or '_')
-        #[arg(long)]
-        agent: String,
+        #[arg(short = 'a', long, value_name = "AGENT", conflicts_with = "agent_pos")]
+        agent: Option<String>,
+        /// Optional positional shortcut for default agents
+        #[arg(value_name = "AGENT", conflicts_with = "agent")]
+        agent_pos: Option<String>,
         /// Optional session name to allow multiple sessions per agent
-        #[arg(long)]
+        #[arg(short = 'n', long)]
         name: Option<String>,
         /// Replace the configured command with a custom one (parsed like a shell command)
-        #[arg(long = "cmd", value_name = "COMMAND")]
+        #[arg(short = 'c', long = "cmd", value_name = "COMMAND")]
         command_override: Option<String>,
         /// Additional parameters appended to the agent command (parsed like a shell command)
-        #[arg(long, value_name = "PARAMS")]
+        #[arg(short = 'p', long, value_name = "PARAMS")]
         params: Option<String>,
         /// Kill an existing session before starting
-        #[arg(long)]
+        #[arg(short = 'f', long)]
         force: bool,
     },
     /// Remove the tmux session for an agent
     Rm {
         /// Agent identifier (alphanumeric, '-' or '_')
-        #[arg(long)]
-        agent: String,
+        #[arg(short = 'a', long, value_name = "AGENT", conflicts_with = "agent_pos")]
+        agent: Option<String>,
+        /// Optional positional shortcut for default agents
+        #[arg(value_name = "AGENT", conflicts_with = "agent")]
+        agent_pos: Option<String>,
         /// Optional session name if the agent has multiple sessions
-        #[arg(long)]
+        #[arg(short = 'n', long)]
         name: Option<String>,
     },
     /// Attach to an agent's tmux session
     Attach {
         /// Agent identifier (alphanumeric, '-' or '_')
-        #[arg(long)]
-        agent: String,
+        #[arg(short = 'a', long, value_name = "AGENT", conflicts_with = "agent_pos")]
+        agent: Option<String>,
+        /// Optional positional shortcut for default agents
+        #[arg(value_name = "AGENT", conflicts_with = "agent")]
+        agent_pos: Option<String>,
         /// Optional session name if the agent has multiple sessions
-        #[arg(long)]
+        #[arg(short = 'n', long)]
         name: Option<String>,
         /// Launch the agent if the session does not exist
-        #[arg(long)]
+        #[arg(short = 's', long)]
         start: bool,
     },
     /// Detach all clients from an agent's tmux session
     Detach {
         /// Agent identifier (alphanumeric, '-' or '_')
-        #[arg(long)]
-        agent: String,
+        #[arg(short = 'a', long, value_name = "AGENT", conflicts_with = "agent_pos")]
+        agent: Option<String>,
+        /// Optional positional shortcut for default agents
+        #[arg(value_name = "AGENT", conflicts_with = "agent")]
+        agent_pos: Option<String>,
         /// Optional session name if the agent has multiple sessions
-        #[arg(long)]
+        #[arg(short = 'n', long)]
         name: Option<String>,
     },
 }
@@ -89,11 +101,13 @@ pub fn run() -> Result<()> {
         }
         Commands::Start {
             agent,
+            agent_pos,
             name,
             command_override,
             params,
             force,
         } => {
+            let agent = resolve_agent_input(agent, agent_pos, "start")?;
             handle_start(
                 &agent,
                 name.as_deref(),
@@ -102,13 +116,29 @@ pub fn run() -> Result<()> {
                 force,
             )?;
         }
-        Commands::Rm { agent, name } => {
+        Commands::Rm {
+            agent,
+            agent_pos,
+            name,
+        } => {
+            let agent = resolve_agent_input(agent, agent_pos, "rm")?;
             handle_rm(&agent, name.as_deref())?;
         }
-        Commands::Attach { agent, name, start } => {
+        Commands::Attach {
+            agent,
+            agent_pos,
+            name,
+            start,
+        } => {
+            let agent = resolve_agent_input(agent, agent_pos, "attach")?;
             handle_attach(&agent, name.as_deref(), start)?;
         }
-        Commands::Detach { agent, name } => {
+        Commands::Detach {
+            agent,
+            agent_pos,
+            name,
+        } => {
+            let agent = resolve_agent_input(agent, agent_pos, "detach")?;
             handle_detach(&agent, name.as_deref())?;
         }
     }
@@ -279,13 +309,13 @@ fn print_help() {
     println!("Commands:");
     println!("  amux help                Show this overview");
     println!("  amux status [agent]      Show agent session state");
-    println!("  amux start --agent NAME [--name SESSION] [--params \"...\"]");
-    println!("                         Launch an agent session (use --force to restart)");
-    println!("  amux rm --agent NAME [--name SESSION]");
+    println!("  amux start [-a NAME|NAME] [-n SESSION] [-p \"...\"] [-f]");
+    println!("                         Launch an agent session (use -f/--force to restart)");
+    println!("  amux rm [-a NAME|NAME] [-n SESSION]");
     println!("                         Remove the agent's tmux session");
-    println!("  amux attach --agent NAME [--name SESSION] [--start]");
-    println!("                         Attach to an agent session (use --start to launch)");
-    println!("  amux detach --agent NAME [--name SESSION]");
+    println!("  amux attach [-a NAME|NAME] [-n SESSION] [-s]");
+    println!("                         Attach to an agent session (use -s/--start to launch)");
+    println!("  amux detach [-a NAME|NAME] [-n SESSION]");
     println!("                         Detach all clients from an agent session");
     println!();
 
@@ -317,4 +347,27 @@ fn ensure_valid_identifier(kind: &str, value: &str) -> Result<()> {
             "{kind} '{value}' contains invalid characters (allowed: a-z, A-Z, 0-9, '-', '_')"
         ))
     }
+}
+
+fn resolve_agent_input(
+    agent_flag: Option<String>,
+    agent_pos: Option<String>,
+    command: &str,
+) -> Result<String> {
+    if let Some(agent) = agent_flag {
+        return Ok(agent);
+    }
+
+    if let Some(agent) = agent_pos {
+        if agents::is_default_agent(&agent) {
+            return Ok(agent);
+        }
+        return bail(format!(
+            "{command}: '{agent}' is not a default agent; use --agent/-a to specify custom agents"
+        ));
+    }
+
+    bail(format!(
+        "{command}: agent name required; supply a default agent shortcut or --agent/-a <name>"
+    ))
 }

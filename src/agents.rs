@@ -63,6 +63,10 @@ pub fn agent_description(name: &str) -> Option<&'static str> {
     default_agent(name).map(|agent| agent.description)
 }
 
+pub fn is_default_agent(name: &str) -> bool {
+    default_agent(name).is_some()
+}
+
 pub fn parse_tokens(origin: &str, raw: &str) -> Result<Vec<String>> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
