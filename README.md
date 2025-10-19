@@ -31,22 +31,23 @@ cargo install --path .
 
 ```bash
 # List running agent sessions
-aamux status
+amux status
 
-# Launch the default codex agent
-aamux start --agent codex
+# Launch the default codex agent (short flag or positional shortcut)
+amux start codex
+amux start -a codex
 
 # Launch a second codex session with extra params
-aamux start --agent codex --name review-123 --params "--mode review"
+amux start codex -n review-123 -p "--mode review"
 
 # Attach to an existing session (start it automatically if absent)
-aamux attach --agent codex --name review-123 --start
+amux attach codex -n review-123 -s
 
 # Detach all clients from a session
-aamux detach --agent codex --name review-123
+amux detach codex -n review-123
 
 # Remove the tmux session entirely
-aamux rm --agent codex --name review-123
+amux rm codex -n review-123
 ```
 
 ### Custom agents
