@@ -13,6 +13,13 @@
 - Respects `CA_AGENT_CMD_<NAME>` environment overrides and `--cmd`/`--params`
 - Provides status, attach, detach, start, and remove subcommands
 
+## Requirements
+
+- `tmux` installed and available on `PATH` (v3.0+ recommended).
+  - macOS: `brew install tmux`
+  - Debian/Ubuntu: `sudo apt-get update && sudo apt-get install tmux`
+  - Nix: `nix-env -iA nixpkgs.tmux`
+
 ## Installation
 
 ```bash

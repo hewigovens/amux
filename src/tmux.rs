@@ -1,3 +1,4 @@
+use std::io;
 use std::process::{Command, Stdio};
 
 use crate::error::{bail, with_context, Result};
@@ -46,7 +47,7 @@ pub fn list_sessions() -> Result<Vec<SessionDetail>> {
                 }
             }
         }
-        Err(err) => return Err(with_context(err, "failed to invoke tmux")),
+        Err(err) => return Err(tmux_invoke_error(err)),
     };
 
     let mut sessions = Vec::new();
@@ -75,9 +76,7 @@ pub fn new_session(session: &str, command_tokens: &[String]) -> Result<()> {
         .arg(session)
         .arg("--")
         .args(command_tokens);
-    let status = cmd
-        .status()
-        .map_err(|err| with_context(err, "failed to invoke tmux"))?;
+    let status = cmd.status().map_err(tmux_invoke_error)?;
     if status.success() {
         Ok(())
     } else {
@@ -91,7 +90,7 @@ pub fn kill_session(session: &str) -> Result<()> {
         .arg("-t")
         .arg(session)
         .status()
-        .map_err(|err| with_context(err, "failed to invoke tmux"))?;
+        .map_err(tmux_invoke_error)?;
     if status.success() {
         Ok(())
     } else {
@@ -107,7 +106,7 @@ pub fn has_session(session: &str) -> Result<bool> {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()
-        .map_err(|err| with_context(err, "failed to invoke tmux"))?;
+        .map_err(tmux_invoke_error)?;
     Ok(status.success())
 }
 
@@ -117,7 +116,7 @@ pub fn client_count(session: &str) -> Result<usize> {
         .arg("-t")
         .arg(session)
         .output()
-        .map_err(|err| with_context(err, "failed to invoke tmux"))?;
+        .map_err(tmux_invoke_error)?;
 
     if output.status.success() {
         let count = String::from_utf8_lossy(&output.stdout).lines().count();
@@ -138,7 +137,7 @@ pub fn attach_session(session: &str) -> Result<()> {
         .arg("-t")
         .arg(session)
         .status()
-        .map_err(|err| with_context(err, "failed to invoke tmux"))?;
+        .map_err(tmux_invoke_error)?;
 
     if status.success() {
         Ok(())
@@ -153,7 +152,7 @@ pub fn detach_clients(session: &str) -> Result<()> {
         .arg("-s")
         .arg(session)
         .status()
-        .map_err(|err| with_context(err, "failed to invoke tmux"))?;
+        .map_err(tmux_invoke_error)?;
 
     if status.success() {
         Ok(())
@@ -170,7 +169,7 @@ fn current_command(session: &str) -> Result<Option<String>> {
         .arg(session)
         .arg("#{pane_current_command}")
         .output()
-        .map_err(|err| with_context(err, "failed to invoke tmux"))?;
+        .map_err(tmux_invoke_error)?;
 
     if output.status.success() {
         let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -196,4 +195,19 @@ fn tmux_command() -> Command {
     let mut cmd = Command::new("tmux");
     cmd.env("TMUX", "");
     cmd
+}
+
+fn tmux_invoke_error(err: io::Error) -> crate::error::DynError {
+    if err.kind() == io::ErrorKind::NotFound {
+        // Provide actionable guidance when tmux is not installed
+        crate::error::fail(
+            "tmux not found. Please install tmux and try again.\n\
+             - macOS: brew install tmux\n\
+             - Debian/Ubuntu: sudo apt-get update && sudo apt-get install tmux\n\
+             - Nix: nix-env -iA nixpkgs.tmux\n\
+             See: https://github.com/tmux/tmux/wiki/Installing",
+        )
+    } else {
+        with_context(err, "failed to invoke tmux")
+    }
 }
