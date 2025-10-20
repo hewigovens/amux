@@ -4,7 +4,7 @@
 [![Crates.io](https://img.shields.io/crates/v/amux.svg)](https://crates.io/crates/amux)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-`amux` is a tiny CLI that keeps your local AI/code agents organised inside tmux. Launch, attach, detach, and remove agent sessions with one consistent interface that works across shells.
+`amux` (short for *agent multiplexer*) is a tiny CLI that keeps your local AI/code agents organised inside tmux. Launch, attach, detach, and remove agent sessions with one consistent interface that works across shells.
 
 ## Features
 
