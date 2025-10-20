@@ -27,6 +27,11 @@ enum Commands {
         /// Optional agent name to filter results
         agent: Option<String>,
     },
+    /// Alias for `status`
+    List {
+        /// Optional agent name to filter results
+        agent: Option<String>,
+    },
     /// Launch an agent inside tmux (use --force to restart)
     Start {
         /// Agent identifier (alphanumeric, '-' or '_')
@@ -96,7 +101,7 @@ pub fn run() -> Result<()> {
         Commands::Help => {
             print_help();
         }
-        Commands::Status { agent } => {
+        Commands::Status { agent } | Commands::List { agent } => {
             handle_status(agent)?;
         }
         Commands::Start {
