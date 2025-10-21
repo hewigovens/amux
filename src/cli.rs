@@ -22,6 +22,8 @@ struct Cli {
 enum Commands {
     /// Show available commands and configured agents
     Help,
+    /// List all configured agents
+    Agents,
     /// Show the current state of configured agent sessions
     Status {
         /// Optional agent name to filter results
@@ -100,6 +102,9 @@ pub fn run() -> Result<()> {
     match cli.command {
         Commands::Help => {
             print_help();
+        }
+        Commands::Agents => {
+            print_agents();
         }
         Commands::Status { agent } | Commands::List { agent } => {
             handle_status(agent)?;
@@ -291,8 +296,8 @@ fn handle_status(agent_filter: Option<String>) -> Result<()> {
 }
 
 fn print_agent_sessions(agent: &str, sessions: &[&SessionDetail]) {
-    let mut entries: Vec<&SessionDetail> = sessions.to_vec();
-    entries.sort_by(|a, b| a.session_name.cmp(&b.session_name));
+    let mut entries = sessions.to_vec();
+    entries.sort_unstable_by(|a, b| a.session_name.cmp(&b.session_name));
 
     for session in entries {
         let name_part = session
@@ -313,6 +318,7 @@ fn print_help() {
     println!();
     println!("Commands:");
     println!("  amux help                Show this overview");
+    println!("  amux agents              List all configured agents");
     println!("  amux status [agent]      Show agent session state");
     println!("  amux start [-a NAME|NAME] [-n SESSION] [-p \"...\"] [-f]");
     println!("                         Launch an agent session (use -f/--force to restart)");
@@ -327,6 +333,26 @@ fn print_help() {
     let agents = agents::configured_agents();
     if agents.is_empty() {
         println!("No agents configured.");
+        return;
+    }
+
+    println!("Configured agents:");
+    for agent in agents {
+        if let Some(description) = agents::agent_description(&agent) {
+            println!("  {agent:<12} {description}");
+        } else {
+            println!("  {agent}");
+        }
+    }
+}
+
+fn print_agents() {
+    let agents = agents::configured_agents();
+    if agents.is_empty() {
+        println!("No agents configured.");
+        println!();
+        println!("To register custom agents, set environment variables:");
+        println!("  export CA_AGENT_CMD_myagent=\"my-agent-binary --flag foo\"");
         return;
     }
 
