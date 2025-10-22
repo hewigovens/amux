@@ -211,3 +211,41 @@ fn tmux_invoke_error(err: io::Error) -> crate::error::DynError {
         with_context(err, "failed to invoke tmux")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn session_name_without_suffix() {
+        let name = session_name("codex", None);
+        assert_eq!(name, format!("{SESSION_PREFIX}codex"));
+    }
+
+    #[test]
+    fn session_name_with_suffix() {
+        let name = session_name("codex", Some("review"));
+        assert_eq!(name, format!("{SESSION_PREFIX}codex--review"));
+    }
+
+    #[test]
+    fn parse_session_name_splits_agent_and_name() {
+        let parsed = parse_session_name(&format!("{SESSION_PREFIX}codex--review"))
+            .expect("session name should parse");
+        assert_eq!(parsed.0, "codex");
+        assert_eq!(parsed.1.as_deref(), Some("review"));
+    }
+
+    #[test]
+    fn parse_session_name_handles_agent_only() {
+        let parsed =
+            parse_session_name(&format!("{SESSION_PREFIX}codex")).expect("agent-only should parse");
+        assert_eq!(parsed.0, "codex");
+        assert!(parsed.1.is_none());
+    }
+
+    #[test]
+    fn parse_session_name_returns_none_for_unexpected_prefix() {
+        assert!(parse_session_name("other-codex").is_none());
+    }
+}

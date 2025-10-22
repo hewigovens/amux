@@ -109,3 +109,41 @@ fn lookup_env_command(agent: &str) -> Option<String> {
 
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolve_agent_command_defaults_to_builtin() {
+        let command = resolve_agent_command("codex", None).expect("default agent should resolve");
+        assert_eq!(command, vec!["codex"]);
+    }
+
+    #[test]
+    fn resolve_agent_command_honors_override() {
+        let command =
+            resolve_agent_command("codex", Some("custom --flag")).expect("override should parse");
+        assert_eq!(command, vec!["custom", "--flag"]);
+    }
+
+    #[test]
+    fn parse_tokens_trims_and_splits() {
+        let tokens = parse_tokens("origin", "run --mode review").expect("tokens expected");
+        assert_eq!(tokens, vec!["run", "--mode", "review"]);
+    }
+
+    #[test]
+    fn parse_tokens_rejects_empty_input() {
+        let err = parse_tokens("origin", "   ").expect_err("empty input should error");
+        assert!(err.to_string().contains("origin is empty"));
+    }
+
+    #[test]
+    fn configured_agents_include_defaults() {
+        let agents = configured_agents();
+        assert!(agents.contains(&"codex".to_string()));
+        assert!(agents.contains(&"claude".to_string()));
+        assert!(agents.contains(&"gemini".to_string()));
+    }
+}

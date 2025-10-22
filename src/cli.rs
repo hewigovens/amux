@@ -402,3 +402,45 @@ fn resolve_agent_input(
         "{command}: agent name required; supply a default agent shortcut or --agent/-a <name>"
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ensure_valid_identifier_accepts_expected_chars() {
+        ensure_valid_identifier("agent", "agent-123_name").expect("identifier should be valid");
+    }
+
+    #[test]
+    fn ensure_valid_identifier_rejects_invalid_chars() {
+        let err = ensure_valid_identifier("agent", "bad name").expect_err("space should fail");
+        assert!(
+            err.to_string().contains("contains invalid characters"),
+            "error should mention invalid characters"
+        );
+    }
+
+    #[test]
+    fn resolve_agent_input_prefers_flag() {
+        let agent = resolve_agent_input(Some("custom".into()), Some("codex".into()), "start")
+            .expect("flag should win");
+        assert_eq!(agent, "custom");
+    }
+
+    #[test]
+    fn resolve_agent_input_allows_default_positional() {
+        let agent = resolve_agent_input(None, Some("codex".into()), "start").expect("default ok");
+        assert_eq!(agent, "codex");
+    }
+
+    #[test]
+    fn resolve_agent_input_rejects_unknown_positional() {
+        let err = resolve_agent_input(None, Some("unknown".into()), "start")
+            .expect_err("non-default should error");
+        assert!(
+            err.to_string().contains("is not a default agent"),
+            "error should flag non-default agent"
+        );
+    }
+}
