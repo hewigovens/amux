@@ -88,18 +88,24 @@ fn default_agent(name: &str) -> Option<DefaultAgent> {
 }
 
 fn lookup_env_command(agent: &str) -> Option<String> {
-    let mut keys = vec![format!("CA_AGENT_CMD_{agent}")];
-    let upper = agent.to_ascii_uppercase();
-    if upper != agent {
-        keys.push(format!("CA_AGENT_CMD_{upper}"));
+    // Try the agent name as-is first
+    let key = format!("CA_AGENT_CMD_{agent}");
+    if let Ok(val) = env::var(&key) {
+        if !val.trim().is_empty() {
+            return Some(val);
+        }
     }
 
-    for key in keys {
+    // Try uppercase variant if different
+    let upper = agent.to_ascii_uppercase();
+    if upper != agent {
+        let key = format!("CA_AGENT_CMD_{upper}");
         if let Ok(val) = env::var(&key) {
             if !val.trim().is_empty() {
                 return Some(val);
             }
         }
     }
+
     None
 }
