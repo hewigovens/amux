@@ -26,6 +26,11 @@ const DEFAULT_AGENTS: &[DefaultAgent] = &[
         command: &["gemini"],
         description: "Gemini CLI",
     },
+    DefaultAgent {
+        name: "opencode",
+        command: &["opencode"],
+        description: "OpenCode CLI",
+    },
 ];
 
 pub fn resolve_agent_command(agent: &str, command_override: Option<&str>) -> Result<Vec<String>> {
@@ -145,5 +150,6 @@ mod tests {
         assert!(agents.contains(&"codex".to_string()));
         assert!(agents.contains(&"claude".to_string()));
         assert!(agents.contains(&"gemini".to_string()));
+        assert!(agents.contains(&"opencode".to_string()));
     }
 }
