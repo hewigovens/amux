@@ -193,7 +193,17 @@ fn parse_session_name(session: &str) -> Option<(String, Option<String>)> {
 
 fn tmux_command() -> Command {
     let mut cmd = Command::new("tmux");
+    // Ensure tmux does not inherit an existing server context
     cmd.env("TMUX", "");
+
+    // Fallback: if TERM is (xterm-)ghostty, use a widely supported
+    // TERM for the tmux child process to avoid missing terminfo.
+    if let Ok(term) = std::env::var("TERM") {
+        if term == "xterm-ghostty" || term == "ghostty" {
+            cmd.env("TERM", "xterm-256color");
+        }
+    }
+
     cmd
 }
 

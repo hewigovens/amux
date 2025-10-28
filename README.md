@@ -20,6 +20,9 @@
   - Debian/Ubuntu: `sudo apt-get update && sudo apt-get install tmux`
   - Nix: `nix-env -iA nixpkgs.tmux`
 
+Note on Ghostty over SSH:
+- If your `$TERM` is `xterm-ghostty` and the remote host lacks Ghostty's terminfo, `tmux` may fail with "missing or unsuitable terminal: xterm-ghostty". To improve defaults, `amux` automatically runs `tmux` with `TERM=xterm-256color` in this case. If you prefer native Ghostty terminfo, install it on the remote (see https://ghostty.org/docs/help/terminfo) and keep `$TERM=xterm-ghostty`.
+
 ## Installation
 
 ```bash
